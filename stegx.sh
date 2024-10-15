@@ -6,6 +6,8 @@ if ! command -v stegosuite &> /dev/null; then
     exit 1
 fi
 
+clear
+
 # Get the directory where the script is executed (assumed to be inside the SD card)
 WORK_DIR=$(pwd)
 
@@ -33,14 +35,16 @@ extract_text_from_jpg() {
     # Define output text file name based on JPG file name
     output_file="${jpgfile%.*}.txt"
 
-    # Extract the hidden text using stegosuite (assuming stegosuite supports CLI extraction)
-    stegosuite -extract -p "$password" -i "$jpgfile" -o "$output_file"
+    # Extract the hidden text using stegosuite
+    # Redirect output to the .txt file
+    stegosuite extract -k "$password" "$jpgfile" > "$output_file"
 
     # Check if extraction was successful
     if [ $? -eq 0 ]; then
         echo "Hidden text extracted and saved to $output_file"
     else
         echo "Failed to extract hidden text. Please check the password or file."
+        rm -f "$output_file"  # Clean up the output file if extraction fails
     fi
 }
 
