@@ -1,121 +1,105 @@
 #!/usr/bin/env python3
 
-import os
+import tkinter as tk
+from tkinter import filedialog, messagebox, scrolledtext
+from PIL import Image, ImageTk
 import subprocess
-from tkinter import filedialog, messagebox, Tk, Label, Button, Entry, Text, Scrollbar, Frame
-from tkinter.constants import BOTH, END, VERTICAL, HORIZONTAL, WORD
+import os
 
-# Function to check if Stegosuite is installed
-def check_stegosuite_installed():
+# Function to extract hidden text using stegosuite
+def extract_text_from_jpg(image_path, password):
     try:
-        subprocess.run(["stegosuite", "--help"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except FileNotFoundError:
-        messagebox.showerror("Error", "Stegosuite is not installed. Please install it first.")
-        return False
-    return True
-
-# Function to select JPG file
-def select_jpg():
-    jpgfile = filedialog.askopenfilename(title="Select JPG File", filetypes=[("JPG Files", "*.jpg")])
-    if jpgfile:
-        selected_file_label.config(text=f"Selected file: {jpgfile}")
-    return jpgfile
-
-# Function to save extracted text
-def save_extracted_text(default_name, text_content):
-    save_path = filedialog.asksaveasfilename(defaultextension=".txt", initialfile=default_name)
-    if save_path:
-        with open(save_path, "w") as file:
-            file.write(text_content)
-        messagebox.showinfo("Success", f"Text saved to {save_path}")
-
-# Function to extract hidden text from the selected JPG
-def extract_text():
-    if not check_stegosuite_installed():
-        return
-    
-    jpgfile = select_jpg()
-    if not jpgfile:
-        messagebox.showerror("Error", "No file selected.")
-        return
-
-    password = password_entry.get()
-    if not password:
-        messagebox.showerror("Error", "Password is required.")
-        return
-
-    try:
-        # Run Stegosuite command to extract text
-        result = subprocess.run(
-            ["stegosuite", "extract", "-k", password, jpgfile],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
+        # Command to extract the hidden text from the image
+        output_file = f"{os.path.splitext(image_path)[0]}.txt"
+        cmd = ['stegosuite', 'extract', '-k', password, image_path]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:
-            extracted_text = result.stdout.decode()
-
-            # Display the extracted text in the text area
-            text_display.delete(1.0, END)
-            text_display.insert(END, extracted_text)
-
-            # Enable the save button after successful extraction
-            save_button.config(state="normal")
+            return result.stdout.strip()  # Return extracted text
         else:
-            error_msg = result.stderr.decode() or "Unknown error"
-            messagebox.showerror("Error", f"Failed to extract hidden text: {error_msg}")
+            raise Exception(f"Stegosuite failed: {result.stderr.strip()}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to extract hidden text: {str(e)}")
+        return None
 
-    except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"Extraction failed: {e.stderr.decode()}")
+# Function to handle file selection
+def select_file():
+    filetypes = [('JPEG Files', '*.jpg'), ('All Files', '*.*')]
+    file_path = filedialog.askopenfilename(title="Select a JPG file", filetypes=filetypes)
+    if file_path:
+        try:
+            # Load and display image
+            img = Image.open(file_path)
+            img.thumbnail((300, 300))  # Resize image to fit GUI window
+            img_tk = ImageTk.PhotoImage(img)
+            img_label.config(image=img_tk)
+            img_label.image = img_tk  # Keep a reference to prevent garbage collection
+            selected_file.set(file_path)  # Update selected file path
+        except Exception as e:
+            messagebox.showerror("Error", f"Unable to open image: {str(e)}")
 
-# GUI setup with dark theme
-def create_gui():
-    global root, password_entry, text_display, selected_file_label, save_button
+# Function to extract text and display it in a text box
+def extract_and_display_text():
+    file_path = selected_file.get()
+    password = password_entry.get()
 
-    root = Tk()
-    root.title("StegX")
-    root.configure(bg="#2e2e2e")  # Dark background
-    root.geometry("800x600")
+    if not file_path or not password:
+        messagebox.showwarning("Missing Input", "Please select a file and enter a password.")
+        return
 
-    # File selection frame
-    file_frame = Frame(root, bg="#2e2e2e")
-    file_frame.pack(fill="x", padx=10, pady=10)
+    extracted_text = extract_text_from_jpg(file_path, password)
+    if extracted_text:
+        text_display.delete(1.0, tk.END)  # Clear previous content
+        text_display.insert(tk.END, extracted_text)
 
-    selected_file_label = Label(file_frame, text="No file selected", fg="#ffffff", bg="#2e2e2e")
-    selected_file_label.pack()
+# Function to save the extracted text
+def save_text():
+    extracted_text = text_display.get(1.0, tk.END).strip()
+    if not extracted_text:
+        messagebox.showwarning("No Text", "There is no extracted text to save.")
+        return
 
-    select_file_button = Button(file_frame, text="Select JPG File", command=select_jpg, bg="#565656", fg="#ffffff")
-    select_file_button.pack(pady=5)
+    save_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+    if save_path:
+        with open(save_path, 'w') as f:
+            f.write(extracted_text)
+        messagebox.showinfo("Saved", f"Extracted text saved to {save_path}")
 
-    # Password input frame
-    password_frame = Frame(root, bg="#2e2e2e")
-    password_frame.pack(fill="x", padx=10, pady=10)
+# Create main application window
+root = tk.Tk()
+root.title("StegX")
 
-    Label(password_frame, text="Enter Password:", fg="#ffffff", bg="#2e2e2e").pack(side="left")
-    password_entry = Entry(password_frame, show="*", bg="#3c3c3c", fg="#ffffff", insertbackground="white")
-    password_entry.pack(side="left", padx=10, pady=5)
+# Set a dark theme for the GUI
+root.configure(bg='#2e2e2e')
+root.geometry("600x500")
 
-    # Extract button
-    extract_button = Button(root, text="Extract file", command=extract_text, bg="#565656", fg="#ffffff")
-    extract_button.pack(pady=10)
+# Variable to store the selected file path
+selected_file = tk.StringVar()
 
-    # Text display frame
-    text_frame = Frame(root, bg="#2e2e2e")
-    text_frame.pack(fill="both", expand=True, padx=10, pady=10)
+# Label and button to select the file
+file_select_btn = tk.Button(root, text="Select JPG File", command=select_file, bg='#444', fg='white')
+file_select_btn.pack(pady=10)
 
-    text_display = Text(text_frame, wrap=WORD, bg="#3c3c3c", fg="#ffffff", width=80, height=20)
-    text_display.pack(fill="both", expand=True, padx=5, pady=5)
+img_label = tk.Label(root, bg='#2e2e2e')
+img_label.pack(pady=10)
 
-    # Scrollbar for the text display
-    scrollbar = Scrollbar(text_frame, command=text_display.yview, bg="#2e2e2e")
-    text_display.config(yscrollcommand=scrollbar.set)
-    scrollbar.pack(side="right", fill=VERTICAL)
+# Password entry box
+password_label = tk.Label(root, text="Enter Password:", bg='#2e2e2e', fg='white')
+password_label.pack(pady=5)
+password_entry = tk.Entry(root, show='*', width=40)
+password_entry.pack(pady=5)
 
-    # Save button
-    save_button = Button(root, text="Save Extracted Text", state="disabled", command=lambda: save_extracted_text("extracted_text.txt", text_display.get(1.0, END)), bg="#565656", fg="#ffffff")
-    save_button.pack(pady=10)
+# Button to extract text
+extract_btn = tk.Button(root, text="Extract Text", command=extract_and_display_text, bg='#444', fg='white')
+extract_btn.pack(pady=10)
 
-    root.mainloop()
+# Scrolled text box to display extracted text
+text_display = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=80, height=20, bg='#1e1e1e', fg='white', insertbackground='white')
+text_display.pack(pady=10)
 
-if __name__ == "__main__":
-    create_gui()
+# Button to save the extracted text
+save_btn = tk.Button(root, text="Save Extracted Text", command=save_text, bg='#444', fg='white')
+save_btn.pack(pady=10)
+
+root.mainloop()
