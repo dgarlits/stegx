@@ -17,7 +17,14 @@ def check_stegosuite():
 
 # Function to extract text from a selected JPG file
 def extract_text(jpgfile, password):
-    output_file = os.path.join(os.path.dirname(jpgfile), f"{os.path.splitext(jpgfile)[0]}.txt")
+    output_file = filedialog.asksaveasfilename(
+        defaultextension=".txt",
+        filetypes=[("Text files", "*.txt")],
+        title="Save extracted text as"
+    )
+
+    if not output_file:
+        return  # User cancelled the save dialog
 
     try:
         result = subprocess.run(
@@ -44,6 +51,7 @@ def select_jpg():
     if jpgfile:
         display_image(jpgfile)  # Show the selected image
         jpg_label.config(text=os.path.basename(jpgfile))  # Show the filename
+        jpg_label.file_path = jpgfile  # Store the file path for extraction
 
 # Function to display the selected image in the GUI
 def display_image(jpgfile):
@@ -57,17 +65,20 @@ def display_image(jpgfile):
 
 # Function to run the extraction process
 def run_extraction():
-    jpgfile = jpg_label.cget("text")  # Get the filename from the label
-    if jpgfile == "No file selected":
-        messagebox.showwarning("Warning", "Please select a JPG file.")
-        return  # No file selected
+    try:
+        jpgfile = jpg_label.file_path  # Get the filename from the label
+        if not jpgfile:
+            messagebox.showwarning("Warning", "Please select a JPG file.")
+            return  # No file selected
 
-    password = password_entry.get()  # Get password from entry field
-    if not password:
-        messagebox.showwarning("Warning", "Please enter the password.")
-        return  # No password entered
+        password = password_entry.get()  # Get password from entry field
+        if not password:
+            messagebox.showwarning("Warning", "Please enter the password.")
+            return  # No password entered
 
-    extract_text(jpgfile, password)
+        extract_text(jpgfile, password)
+    except AttributeError:
+        messagebox.showwarning("Warning", "Please select a JPG file first.")
 
 # Function to create the main application window
 def main():
@@ -95,6 +106,7 @@ def main():
     # Label to display selected JPG file
     jpg_label = tk.Label(root, text="No file selected", bg="#f0f0f0", fg="#555555")
     jpg_label.pack(pady=5)
+    jpg_label.file_path = None  # Initialize file_path
 
     # Password entry
     password_label = tk.Label(root, text="Enter Password:", bg="#f0f0f0")
