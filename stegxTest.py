@@ -34,11 +34,15 @@ def extract_text(jpgfile, password):
             stderr=subprocess.PIPE
         )
 
+        # Print output for debugging
+        print("STDOUT:", result.stdout.decode())
+        print("STDERR:", result.stderr.decode())
+
         if result.returncode == 0 and os.path.exists(output_file):
             messagebox.showinfo("Success", f"Hidden text extracted and saved to {output_file}")
         else:
             error_msg = result.stderr.decode() if result.stderr else "No error message available."
-            messagebox.showerror("Error", f"Failed to extract hidden text: {error_msg}")
+            messagebox.showerror("Error", f"Failed to extract hidden text:\n{error_msg}")
     except Exception as e:
         messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
 
@@ -62,6 +66,10 @@ def display_image(jpgfile):
     # Clear previous image and set new image
     image_label.config(image=img_tk)
     image_label.image = img_tk  # Keep a reference to avoid garbage collection
+
+    # Resize the window based on the image size
+    root.geometry(f"{img.width + 40}x{img.height + 200}")  # Add padding for other UI elements
+    root.update_idletasks()  # Update the window to reflect changes
 
 # Function to run the extraction process
 def run_extraction():
