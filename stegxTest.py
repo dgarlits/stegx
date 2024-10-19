@@ -2,138 +2,123 @@
 
 import os
 import subprocess
-import tkinter as tk
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk  # Pillow is needed for image preview
-import sys
+from tkinter import filedialog, messagebox, Tk, Label, Button, Entry, PhotoImage, Frame, Canvas, Scrollbar
+from tkinter.constants import BOTH, VERTICAL, HORIZONTAL
 
 # Function to check if Stegosuite is installed
-def check_stegosuite():
+def check_stegosuite_installed():
     try:
-        subprocess.run(["stegosuite", "--version"], check=True)
-    except subprocess.CalledProcessError:
+        subprocess.run(["stegosuite", "--help"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except FileNotFoundError:
+        messagebox.showerror("Error", "Stegosuite is not installed. Please install it first.")
         return False
     return True
 
-# Function to extract text from a selected JPG file
-def extract_text(jpgfile, password):
-    output_file = filedialog.asksaveasfilename(
-        defaultextension=".txt",
-        filetypes=[("Text files", "*.txt")],
-        title="Save extracted text as"
-    )
+# Function to select JPG file
+def select_jpg():
+    jpgfile = filedialog.askopenfilename(title="Select JPG File", filetypes=[("JPG Files", "*.jpg")])
+    if jpgfile:
+        show_image(jpgfile)
+    return jpgfile
 
+# Function to show the selected image in a resizable window
+def show_image(jpgfile):
+    img = PhotoImage(file=jpgfile)
+    canvas.create_image(0, 0, anchor="nw", image=img)
+    canvas.image = img
+    canvas.config(scrollregion=canvas.bbox("all"))
+    root.update_idletasks()
+
+# Function to save extracted text
+def save_extracted_text(default_name):
+    save_path = filedialog.asksaveasfilename(defaultextension=".txt", initialfile=default_name)
+    return save_path
+
+# Function to extract hidden text from the selected JPG
+def extract_text():
+    if not check_stegosuite_installed():
+        return
+    
+    # Select JPG file
+    jpgfile = select_jpg()
+    if not jpgfile:
+        messagebox.showerror("Error", "No file selected.")
+        return
+
+    # Get password from user
+    password = password_entry.get()
+    if not password:
+        messagebox.showerror("Error", "Password is required.")
+        return
+
+    # Define default output file name
+    default_output_file = os.path.basename(jpgfile).replace(".jpg", ".txt")
+    
+    # Ask where to save the extracted text
+    output_file = save_extracted_text(default_output_file)
     if not output_file:
-        return  # User cancelled the save dialog
-
+        messagebox.showerror("Error", "No output location selected.")
+        return
+    
     try:
+        # Run Stegosuite command to extract text
         result = subprocess.run(
             ["stegosuite", "extract", "-k", password, jpgfile],
-            check=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-
-        # Print output for debugging
-        print("STDOUT:", result.stdout.decode())
-        print("STDERR:", result.stderr.decode())
-
-        if result.returncode == 0 and os.path.exists(output_file):
+        
+        if result.returncode == 0:
+            with open(output_file, "w") as f:
+                f.write(result.stdout.decode())
             messagebox.showinfo("Success", f"Hidden text extracted and saved to {output_file}")
         else:
-            error_msg = result.stderr.decode() if result.stderr else "No error message available."
-            messagebox.showerror("Error", f"Failed to extract hidden text:\n{error_msg}")
-    except Exception as e:
-        messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
+            error_msg = result.stderr.decode() or "Unknown error"
+            messagebox.showerror("Error", f"Failed to extract hidden text: {error_msg}")
+    except subprocess.CalledProcessError as e:
+        messagebox.showerror("Error", f"Extraction failed: {e.stderr.decode()}")
 
-# Function to open file dialog and select a JPG file
-def select_jpg():
-    jpgfile = filedialog.askopenfilename(
-        title="Select a JPG file",
-        filetypes=[("JPG files", "*.jpg")]
-    )
-    if jpgfile:
-        display_image(jpgfile)  # Show the selected image
-        jpg_label.config(text=os.path.basename(jpgfile))  # Show the filename
-        jpg_label.file_path = jpgfile  # Store the file path for extraction
-
-# Function to display the selected image in the GUI
-def display_image(jpgfile):
-    img = Image.open(jpgfile)
-    img.thumbnail((300, 300))  # Resize image for preview
-    img_tk = ImageTk.PhotoImage(img)
-
-    # Clear previous image and set new image
-    image_label.config(image=img_tk)
-    image_label.image = img_tk  # Keep a reference to avoid garbage collection
-
-    # Resize the window based on the image size
-    root.geometry(f"{img.width + 40}x{img.height + 200}")  # Add padding for other UI elements
-    root.update_idletasks()  # Update the window to reflect changes
-
-# Function to run the extraction process
-def run_extraction():
-    try:
-        jpgfile = jpg_label.file_path  # Get the filename from the label
-        if not jpgfile:
-            messagebox.showwarning("Warning", "Please select a JPG file.")
-            return  # No file selected
-
-        password = password_entry.get()  # Get password from entry field
-        if not password:
-            messagebox.showwarning("Warning", "Please enter the password.")
-            return  # No password entered
-
-        extract_text(jpgfile, password)
-    except AttributeError:
-        messagebox.showwarning("Warning", "Please select a JPG file first.")
-
-# Function to create the main application window
-def main():
-    if not check_stegosuite():
-        if messagebox.askyesno("Stegosuite Not Found", "Stegosuite is not installed. Would you like to install it now?"):
-            subprocess.run(["sudo", "apt", "install", "stegosuite", "-y"])
-            if not check_stegosuite():
-                messagebox.showerror("Installation Failed", "Failed to install Stegosuite. Exiting.")
-                sys.exit(1)
-
-    global root, image_label, password_entry, jpg_label
-    root = tk.Tk()
+# GUI setup with dark theme
+def create_gui():
+    global root, password_entry, canvas
+    
+    root = Tk()
     root.title("Stegosuite Extractor")
-    root.geometry("400x450")  # Set initial size
-    root.configure(bg="#f0f0f0")  # Background color
+    root.configure(bg="#2e2e2e")  # Dark background
+    root.geometry("800x600")  # Set the initial size of the window
 
-    # Create a title label
-    title_label = tk.Label(root, text="Stegosuite Extractor", font=("Arial", 16, "bold"), bg="#f0f0f0")
-    title_label.pack(pady=10)
+    # Frame for file selector and password
+    top_frame = Frame(root, bg="#2e2e2e")
+    top_frame.pack(fill="x", pady=10, padx=10)
 
-    # Image label for preview
-    image_label = tk.Label(root, bg="#ffffff", relief=tk.SUNKEN)
-    image_label.pack(pady=10, padx=10)
+    # Create a label with dark theme
+    Label(top_frame, text="Stegosuite Extractor", fg="#ffffff", bg="#2e2e2e", font=("Arial", 16)).pack(pady=10)
 
-    # Label to display selected JPG file
-    jpg_label = tk.Label(root, text="No file selected", bg="#f0f0f0", fg="#555555")
-    jpg_label.pack(pady=5)
-    jpg_label.file_path = None  # Initialize file_path
-
-    # Password entry
-    password_label = tk.Label(root, text="Enter Password:", bg="#f0f0f0")
-    password_label.pack(pady=5)
-
-    password_entry = tk.Entry(root, show='*', width=30)
+    # Input for password with dark theme
+    Label(top_frame, text="Enter Password:", fg="#ffffff", bg="#2e2e2e").pack()
+    password_entry = Entry(top_frame, show="*", bg="#3c3c3c", fg="#ffffff", insertbackground="white")
     password_entry.pack(pady=5)
 
-    # Create buttons
-    select_button = tk.Button(root, text="Select JPG File", command=select_jpg, bg="#2196F3", fg="white")
-    select_button.pack(pady=5)
+    # Extract button with dark theme
+    extract_button = Button(top_frame, text="Extract Text from JPG", command=extract_text, bg="#565656", fg="#ffffff")
+    extract_button.pack(pady=10)
 
-    extract_button = tk.Button(root, text="Extract Text from JPG", command=run_extraction, bg="#4CAF50", fg="white")
-    extract_button.pack(pady=20)
+    # Scrollable canvas for displaying image
+    canvas_frame = Frame(root, bg="#2e2e2e")
+    canvas_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-    exit_button = tk.Button(root, text="Exit", command=root.quit, bg="#f44336", fg="white")
-    exit_button.pack(pady=5)
+    canvas = Canvas(canvas_frame, bg="#1e1e1e", highlightthickness=0)
+    canvas.pack(side="left", fill="both", expand=True)
 
-    root.mainloop()  # Start the GUI event loop
+    # Scrollbars for the image canvas
+    x_scroll = Scrollbar(canvas_frame, orient=HORIZONTAL, command=canvas.xview)
+    x_scroll.pack(side="bottom", fill="x")
+    y_scroll = Scrollbar(canvas_frame, orient=VERTICAL, command=canvas.yview)
+    y_scroll.pack(side="right", fill="y")
+
+    canvas.config(xscrollcommand=x_scroll.set, yscrollcommand=y_scroll.set)
+
+    root.mainloop()
 
 if __name__ == "__main__":
-    main()
+    create_gui()
