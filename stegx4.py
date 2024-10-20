@@ -2,7 +2,7 @@
 
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, font as tkfont
 from PIL import Image, ImageTk
 import subprocess
 
@@ -41,8 +41,8 @@ class App:
         self.extract_button = tk.Button(self.left_frame, text="Extract Text", command=self.extract_text, bg='#000026', fg='white')
         self.extract_button.pack()
 
-        # Text display area
-        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, height=20, width=50, bg='#2E2E2E', fg='white')
+        # Text display area with font control
+        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, height=20, width=50, bg='#2E2E2E', fg='white', font=tkfont.Font(family="Helvetica", size=12))
         self.text_display.pack()
 
         # Change GUI background color to #000026
@@ -73,11 +73,13 @@ class App:
         password = self.password_entry.get()
         output_file = f"{os.path.splitext(self.selected_file)[0]}.txt"
 
-        # Run the Stegosuite command to extract the text and save it to a *.txt file
-        command = ['stegosuite', 'extract', '-k', password, self.selected_file]
+        # Construct the command as a single string
+        command = f'stegosuite extract -k "{password}" "{self.selected_file}"'
+        
         try:
-            subprocess.run(command, check=True)
-        except Exception as e:
+            # Use subprocess to run the command directly
+            subprocess.run(command, shell=True, check=True)
+        except subprocess.CalledProcessError as e:
             messagebox.showerror("Error", f"Failed to extract text: {e}")
             return
 
