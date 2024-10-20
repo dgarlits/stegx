@@ -29,7 +29,7 @@ class App:
         self.file_name_label.pack()
 
         # Image preview
-        self.image_label = tk.Label(self.left_frame, bg='#00008B')  # Initialize the label for the image
+        self.image_label = tk.Label(self.left_frame, bg='#2E2E2E')  # Initialize the label for the image
         self.image_label.pack()
 
         # Font size input
@@ -49,7 +49,7 @@ class App:
         self.extract_button.pack()
 
         # Text display area
-        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, height=20, width=50, bg='#00008B', fg='white')  # Change text display box background and text color
+        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, height=20, width=50, bg='#2E2E2E', fg='white')  # Change text display box background and text color
         self.text_display.pack()
 
         # Change GUI background color to #00008B
