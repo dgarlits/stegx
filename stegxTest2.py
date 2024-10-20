@@ -11,6 +11,7 @@ class App:
         self.master = master
         self.master.title("Text Extractor")
         self.selected_file = None
+        self.image_label = None  # To hold the image label
 
         # Layout configuration
         self.left_frame = tk.Frame(master)
@@ -26,6 +27,10 @@ class App:
         # Display selected file name
         self.file_name_label = tk.Label(self.left_frame, text="Selected file:")
         self.file_name_label.pack()
+
+        # Image preview
+        self.image_label = tk.Label(self.left_frame)  # Initialize the label for the image
+        self.image_label.pack()
 
         # Font size input
         self.font_size_label = tk.Label(self.left_frame, text="Font Size (12-22):")
@@ -52,6 +57,18 @@ class App:
         self.selected_file = filedialog.askopenfilename(title="Select a JPG file", filetypes=filetypes)
         if self.selected_file:
             self.file_name_label.config(text=f"Selected file: {os.path.basename(self.selected_file)}")
+            self.display_image(self.selected_file)  # Call to display the image
+
+    def display_image(self, file_path):
+        try:
+            # Open the image file
+            img = Image.open(file_path)
+            img.thumbnail((150, 150))  # Resize image for preview
+            self.img_tk = ImageTk.PhotoImage(img)  # Convert to PhotoImage
+            self.image_label.config(image=self.img_tk)  # Update label with the image
+            self.image_label.image = self.img_tk  # Keep a reference to avoid garbage collection
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not display image: {e}")
 
     def extract_text(self):
         if not self.selected_file:
