@@ -65,21 +65,25 @@ class App:
         process = subprocess.run(['stegosuite', 'extract', '-k', password, self.selected_file], capture_output=True, text=True)
 
         if process.returncode == 0:
-            with open(output_file, 'r') as f:
-                extracted_text = f.read()  # Read the extracted text from the file
-            
-            try:
-                font_size = int(self.font_size_entry.get())
-                if font_size < 12 or font_size > 22:
-                    raise ValueError("Font size must be between 12 and 22.")
-            except ValueError as e:
-                messagebox.showerror("Error", str(e))
-                return
+            # Check if the output file was created
+            if os.path.exists(output_file):
+                with open(output_file, 'r') as f:
+                    extracted_text = f.read()  # Read the extracted text from the file
 
-            # Display extracted text in the text display area
-            self.text_display.config(font=('Arial', font_size))
-            self.text_display.delete(1.0, tk.END)  # Clear existing text
-            self.text_display.insert(tk.END, extracted_text)  # Insert new text
+                try:
+                    font_size = int(self.font_size_entry.get())
+                    if font_size < 12 or font_size > 22:
+                        raise ValueError("Font size must be between 12 and 22.")
+                except ValueError as e:
+                    messagebox.showerror("Error", str(e))
+                    return
+
+                # Display extracted text in the text display area
+                self.text_display.config(font=('Arial', font_size))
+                self.text_display.delete(1.0, tk.END)  # Clear existing text
+                self.text_display.insert(tk.END, extracted_text)  # Insert new text
+            else:
+                messagebox.showerror("Error", "No extracted text file found.")
         else:
             messagebox.showerror("Error", f"Failed to extract text: {process.stderr}")
 
