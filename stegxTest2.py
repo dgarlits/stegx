@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
+import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import subprocess
-import os
 
 class StegXApp:
     def __init__(self, master):
@@ -12,17 +12,17 @@ class StegXApp:
         self.master.title("StegX")
         self.master.configure(bg='black')
 
-        # Create frames
-        self.left_frame = tk.Frame(self.master, bg='black')
-        self.left_frame.grid(row=0, column=0, sticky='ns')
+        # Frames for layout with padding
+        self.left_frame = tk.Frame(self.master, bg='black', width=450)
+        self.left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(10, 5))  # Added padding
 
-        self.middle_frame = tk.Frame(self.master, bg='black')
-        self.middle_frame.grid(row=0, column=1, sticky='ns')
+        self.middle_frame = tk.Frame(self.master, bg='black', width=100)
+        self.middle_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(5, 5))  # Added padding
 
-        self.right_frame = tk.Frame(self.master, bg='black')
-        self.right_frame.grid(row=0, column=2, sticky='ns')
+        self.right_frame = tk.Frame(self.master, bg='black', width=450)
+        self.right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(5, 10))  # Added padding
 
-        # Left Frame Widgets
+        # Widgets for left frame
         self.select_button = tk.Button(self.left_frame, text="Select File", command=self.select_file, bg='gray', fg='white')
         self.select_button.pack(pady=10)
 
@@ -35,37 +35,28 @@ class StegXApp:
         self.password_entry = tk.Entry(self.left_frame, show='*')
         self.password_entry.pack(pady=5)
 
-        # Middle Frame Widgets
+        # Widgets for middle frame
         self.extract_button = tk.Button(self.middle_frame, text="Extract", command=self.extract_text, bg='gray', fg='white')
         self.extract_button.pack(pady=10)
 
         self.reset_button = tk.Button(self.middle_frame, text="Reset", command=self.reset, bg='gray', fg='white')
         self.reset_button.pack(pady=10)
 
-        self.font_size_label = tk.Label(self.middle_frame, text="Font Size:", bg='black', fg='white')
+        self.font_size_label = tk.Label(self.middle_frame, text="Font Size (10-20):", bg='black', fg='white')
         self.font_size_label.pack(pady=5)
 
-        self.font_size_scale = tk.Scale(self.middle_frame, from_=8, to=30, orient=tk.HORIZONTAL)
-        self.font_size_scale.pack(pady=5)
+        self.font_size_entry = tk.Entry(self.middle_frame)
+        self.font_size_entry.pack(pady=5)
 
-        # Right Frame Widgets
-        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='darkgray', fg='white', font=('Arial', 12))
+        # Widgets for right frame
+        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='#2e2e2e', fg='white', font=('Arial', 12))
         self.text_display.pack(expand=True, fill=tk.BOTH, pady=10)
 
-        # Configure grid weights
-        self.master.grid_columnconfigure(0, weight=1)  # Left Frame
-        self.master.grid_columnconfigure(1, weight=0)  # Middle Frame
-        self.master.grid_columnconfigure(2, weight=2)  # Right Frame
-
     def select_file(self):
-        # Open file dialog
-        file_path = filedialog.askopenfilename(
-            title="Select a File",
-            filetypes=[("All files", "*.*")]  # Show all files
-        )
+        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg"), ("Audio files", "*.mp3;*.wav")])
         if file_path:
-            self.selected_file = file_path
             self.display_thumbnail(file_path)
+            self.selected_file = file_path
 
     def display_thumbnail(self, file_path):
         if file_path.lower().endswith(('.jpg', '.jpeg')):
@@ -84,26 +75,37 @@ class StegXApp:
         password = self.password_entry.get()
         output_file = f"{os.path.splitext(self.selected_file)[0]}.txt"
 
+        # Get the font size from entry, default to 12 if invalid
+        font_size = self.font_size_entry.get()
+        try:
+            font_size = int(font_size)
+            if font_size < 10 or font_size > 20:
+                raise ValueError
+        except ValueError:
+            font_size = 12  # Default font size
+
         # Use Stegosuite for extraction
         process = subprocess.run(['stegosuite', 'extract', '-k', password, self.selected_file], capture_output=True, text=True)
 
         if process.returncode == 0:
             with open(output_file, 'w') as f:
                 f.write(process.stdout)
-            self.display_extracted_text(output_file)
+            self.display_extracted_text(output_file, font_size)
             messagebox.showinfo("Success", f"Hidden text extracted to {output_file}")
         else:
             messagebox.showerror("Error", f"Failed to extract text: {process.stderr}")
 
-    def display_extracted_text(self, output_file):
+    def display_extracted_text(self, output_file, font_size):
         with open(output_file, 'r') as f:
             self.text_display.delete(1.0, tk.END)  # Clear existing text
             self.text_display.insert(tk.END, f.read())  # Insert new text
+            self.text_display.config(font=('Arial', font_size))  # Set the font size
 
     def reset(self):
         self.thumbnail_label.config(image='')
         self.password_entry.delete(0, tk.END)
         self.text_display.delete(1.0, tk.END)
+        self.font_size_entry.delete(0, tk.END)
 
 if __name__ == "__main__":
     root = tk.Tk()
