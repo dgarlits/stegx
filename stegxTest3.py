@@ -74,38 +74,44 @@ class App:
             messagebox.showerror("Error", f"Could not display image: {e}")
 
     def extract_text(self):
-        if not self.selected_file:
-            messagebox.showerror("Error", "Please select a file first.")
-            return
+    if not self.selected_file:
+        messagebox.showerror("Error", "Please select a file first.")
+        return
 
-        password = self.password_entry.get()  # Get the password from the entry field
-        output_file = f"{os.path.splitext(self.selected_file)[0]}.txt"
+    password = self.password_entry.get()  # Get the password from the entry field
+    output_file = f"{os.path.splitext(self.selected_file)[0]}.txt"
 
-        # Use Stegosuite for extraction (replace with actual extraction logic)
-        process = subprocess.run(['stegosuite', 'extract', '-k', password, self.selected_file], capture_output=True, text=True)
+    # Use Stegosuite for extraction (replace with actual extraction logic)
+    process = subprocess.run(['stegosuite', 'extract', '-k', password, self.selected_file], capture_output=True, text=True)
 
-        if process.returncode == 0:
-            # Check if the output file was created
-            if os.path.exists(output_file):
-                with open(output_file, 'r') as f:
-                    extracted_text = f.read()  # Read the extracted text from the file
+    if process.returncode == 0:
+        # Check if the output file was created
+        if os.path.exists(output_file):
+            with open(output_file, 'r') as f:
+                extracted_text = f.read()  # Read the extracted text from the file
 
-                try:
-                    font_size = int(self.font_size_entry.get())
-                    if font_size < 12 or font_size > 22:
-                        raise ValueError("Font size must be between 12 and 22.")
-                except ValueError as e:
-                    messagebox.showerror("Error", str(e))
-                    return
+            try:
+                font_size = int(self.font_size_entry.get())
+                if font_size < 12 or font_size > 22:
+                    raise ValueError("Font size must be between 12 and 22.")
+            except ValueError as e:
+                messagebox.showerror("Error", str(e))
+                return
 
-                # Display extracted text in the text display area
-                self.text_display.config(font=('Arial', font_size), fg="white")
-                self.text_display.delete(1.0, tk.END)  # Clear existing text
-                self.text_display.insert(tk.END, extracted_text)  # Insert new text
-            else:
-                messagebox.showerror("Error", "No extracted text file found.")
+            # Display extracted text in the text display area
+            self.text_display.config(font=('Arial', font_size), fg="white")
+            self.text_display.delete(1.0, tk.END)  # Clear existing text
+            self.text_display.insert(tk.END, extracted_text)  # Insert new text
         else:
-            messagebox.showerror("Error", f"Failed to extract text: {process.stderr}")
+            messagebox.showerror("Error", "No extracted text file found. Please check if Stegosuite outputs to a different location.")
+            print(f"Expected output file: {output_file}")
+            print(f"Current working directory: {os.getcwd()}")
+            print(process.stdout)  # Show standard output for debugging
+            print(process.stderr)   # Show standard error for debugging
+    else:
+        messagebox.showerror("Error", f"Failed to extract text: {process.stderr}")
+        print(process.stderr)  # Output error details for debugging
+
 
 if __name__ == "__main__":
     root = tk.Tk()
