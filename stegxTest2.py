@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os  # Importing os for file name handling
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
