@@ -25,7 +25,7 @@ check_install_stegosuite() {
 # Clear the screen
 clear
 
-# Get the directory where the script is executed (assumed to be inside the SD card)
+# Get the directory where the script is executed
 WORK_DIR=$(pwd)
 
 # Function to list JPG files and allow the user to select one
@@ -41,27 +41,19 @@ select_jpg() {
     done
 }
 
-# Main function to handle extraction
-extract_text_from_jpg() {
+# Main function to check the capacity of the selected JPG file
+check_capacity_of_jpg() {
     select_jpg
 
-    # Ask for the password
-    read -sp "Enter the password for the selected steganographic JPG file: " password
-    echo
+    # Run the StegoSuite capacity command
+    echo "Analyzing capacity for $jpgfile..."
+    capacity_output=$(stegosuite capacity "$jpgfile")
 
-    # Define output text file name based on JPG file name
-    output_file="${jpgfile%.*}.txt"
-
-    # Extract the hidden text using stegosuite
-    # Redirect output to the .txt file
-    stegosuite extract -k "$password" "$jpgfile" > "$output_file"
-
-    # Check if extraction was successful
+    # Check if the command was successful and display the capacity
     if [ $? -eq 0 ]; then
-        echo "Hidden text extracted and saved to $output_file"
+        echo "$capacity_output"
     else
-        echo "Failed to extract hidden text. Please check the password or file."
-        rm -f "$output_file"  # Clean up the output file if extraction fails
+        echo "Failed to analyze capacity for $jpgfile. Please check the file."
     fi
 }
 
@@ -69,7 +61,7 @@ extract_text_from_jpg() {
 menu() {
     echo
     echo "What would you like to do next?"
-    echo "1) Extract hidden text from another JPG file"
+    echo "1) Check capacity of another JPG file"
     echo "2) Quit"
     read -p "Select an option (1 or 2): " choice
 
@@ -89,12 +81,12 @@ menu() {
     esac
 }
 
-# Main menu function to run extraction and display menu options afterward
+# Main menu function to check capacity and display menu options afterward
 main_menu() {
-    extract_text_from_jpg
+    check_capacity_of_jpg
     menu
 }
 
-# Start the script by checking if Stegosuite is installed and show the main menu if installed
+# Start the script by checking if Stegosuite is installed and showing the main menu if installed
 check_install_stegosuite
 main_menu
