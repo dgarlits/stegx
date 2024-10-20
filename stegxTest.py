@@ -1,118 +1,100 @@
 #!/usr/bin/env python3
 
+import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from PIL import Image, ImageTk
 import subprocess
-import os
 
 class StegXApp:
     def __init__(self, master):
         self.master = master
-        self.master.title("StegX - Stegosuite Frontend")
+        self.master.title("StegX")
         self.master.configure(bg='black')
-        
-        # Check if Stegosuite is installed
-        self.check_install_stegosuite()
 
-        # Layout frames
-        self.left_frame = tk.Frame(master, bg='black')
-        self.middle_frame = tk.Frame(master, bg='black', width=100)
-        self.right_frame = tk.Frame(master, bg='black')
+        # Frames for layout
+        self.left_frame = tk.Frame(self.master, bg='black', width=450)
+        self.left_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-        self.left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.middle_frame = tk.Frame(self.master, bg='black', width=100)
         self.middle_frame.pack(side=tk.LEFT, fill=tk.Y)
-        self.right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-        # Left Frame Widgets
-        self.file_label = tk.Label(self.left_frame, text="Select JPG/MP3/WAV File", bg='black', fg='white')
-        self.file_label.pack(pady=5)
+        self.right_frame = tk.Frame(self.master, bg='black', width=450)
+        self.right_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-        self.file_button = tk.Button(self.left_frame, text="Browse", command=self.select_file, bg='gray', fg='white')
-        self.file_button.pack(pady=5)
+        # Widgets for left frame
+        self.select_button = tk.Button(self.left_frame, text="Select File", command=self.select_file, bg='gray', fg='white')
+        self.select_button.pack(pady=10)
 
-        self.password_label = tk.Label(self.left_frame, text="Password (if any)", bg='black', fg='white')
+        self.thumbnail_label = tk.Label(self.left_frame, bg='black')
+        self.thumbnail_label.pack(pady=10)
+
+        self.password_label = tk.Label(self.left_frame, text="Password:", bg='black', fg='white')
         self.password_label.pack(pady=5)
 
-        self.password_entry = tk.Entry(self.left_frame, show='*', bg='gray', fg='white')
+        self.password_entry = tk.Entry(self.left_frame, show='*')
         self.password_entry.pack(pady=5)
 
-        # Middle Frame Widgets
-        self.extract_button = tk.Button(self.middle_frame, text="Extract Hidden Text", command=self.extract_text, bg='gray', fg='white')
-        self.extract_button.pack(pady=5)
+        # Widgets for middle frame
+        self.extract_button = tk.Button(self.middle_frame, text="Extract", command=self.extract_text, bg='gray', fg='white')
+        self.extract_button.pack(pady=10)
 
         self.reset_button = tk.Button(self.middle_frame, text="Reset", command=self.reset, bg='gray', fg='white')
-        self.reset_button.pack(pady=5)
+        self.reset_button.pack(pady=10)
 
-        # Right Frame Widgets
-        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='gray', fg='white', height=20)
-        self.text_display.pack(fill=tk.BOTH, expand=True, pady=5)
+        self.font_size_label = tk.Label(self.middle_frame, text="Font Size:", bg='black', fg='white')
+        self.font_size_label.pack(pady=5)
 
-        self.save_button = tk.Button(self.right_frame, text="Save Extracted Text", command=self.save_text, bg='gray', fg='white')
-        self.save_button.pack(pady=5)
+        self.font_size_scale = tk.Scale(self.middle_frame, from_=8, to=30, orient=tk.HORIZONTAL)
+        self.font_size_scale.pack(pady=5)
 
-        self.quit_button = tk.Button(self.right_frame, text="Quit", command=self.master.quit, bg='gray', fg='white')
-        self.quit_button.pack(pady=5)
-
-    def check_install_stegosuite(self):
-        try:
-            result = subprocess.run(['command', '-v', 'stegosuite'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if result.returncode != 0:
-                raise FileNotFoundError("Stegosuite not found.")
-        except FileNotFoundError:
-            install = messagebox.askyesno("Stegosuite Not Found", "Stegosuite is not installed. Would you like to install it?")
-            if install:
-                self.install_stegosuite()
-            else:
-                self.master.quit()
-
-    def install_stegosuite(self):
-        try:
-            subprocess.run(['sudo', 'apt', 'update'], check=True)
-            subprocess.run(['sudo', 'apt', 'install', 'stegosuite', '-y'], check=True)
-            messagebox.showinfo("Success", "Stegosuite installed successfully.")
-        except subprocess.CalledProcessError:
-            messagebox.showerror("Error", "Failed to install Stegosuite. Exiting...")
-            self.master.quit()
+        # Widgets for right frame
+        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='gray', fg='white', font=('Arial', 12))
+        self.text_display.pack(expand=True, fill=tk.BOTH, pady=10)
 
     def select_file(self):
-        # Updated file types to include JPG, MP3, and WAV
-        file_types = [("Image files", "*.jpg;*.jpeg"), 
-                      ("Audio files", "*.mp3;*.wav"),
-                      ("All files", "*.*")]
-        self.file_path = filedialog.askopenfilename(filetypes=file_types)
-        if self.file_path:
-            messagebox.showinfo("Selected File", f"You selected: {os.path.basename(self.file_path)}")
+        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg"), ("Audio files", "*.mp3;*.wav")])
+        if file_path:
+            self.display_thumbnail(file_path)
+            self.selected_file = file_path
+
+    def display_thumbnail(self, file_path):
+        if file_path.lower().endswith(('.jpg', '.jpeg')):
+            img = Image.open(file_path)
+            img.thumbnail((300, 300))
+            self.thumbnail = ImageTk.PhotoImage(img)
+            self.thumbnail_label.config(image=self.thumbnail)
+        else:
+            self.thumbnail_label.config(image='')
 
     def extract_text(self):
-        if hasattr(self, 'file_path'):
-            password = self.password_entry.get()
-            output_file = f"{os.path.splitext(self.file_path)[0]}.txt"
+        if not hasattr(self, 'selected_file'):
+            messagebox.showerror("Error", "Please select a file first.")
+            return
 
-            try:
-                # Call Stegosuite to extract the hidden text
-                subprocess.run(['stegosuite', 'extract', '-k', password, self.file_path, '-o', output_file], check=True)
-                with open(output_file, 'r') as file:
-                    hidden_text = file.read()
-                self.text_display.delete(1.0, tk.END)
-                self.text_display.insert(tk.END, hidden_text)
-                messagebox.showinfo("Success", f"Hidden text extracted to {output_file}")
-            except subprocess.CalledProcessError:
-                messagebox.showerror("Error", "Failed to extract hidden text. Please check the password or file.")
-        else:
-            messagebox.showwarning("Warning", "Please select a JPG/MP3/WAV file first.")
+        password = self.password_entry.get()
+        output_file = f"{os.path.splitext(self.selected_file)[0]}.txt"
 
-    def save_text(self):
-        if self.text_display.get(1.0, tk.END).strip():
-            save_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
-            if save_path:
-                with open(save_path, 'w') as file:
-                    file.write(self.text_display.get(1.0, tk.END))
+        # Use Stegosuite for extraction
+        process = subprocess.run(['stegosuite', 'extract', '-k', password, self.selected_file], capture_output=True, text=True)
+
+        if process.returncode == 0:
+            with open(output_file, 'w') as f:
+                f.write(process.stdout)
+            self.display_extracted_text(output_file)
+            messagebox.showinfo("Success", f"Hidden text extracted to {output_file}")
         else:
-            messagebox.showwarning("Warning", "No text to save.")
+            messagebox.showerror("Error", f"Failed to extract text: {process.stderr}")
+
+    def display_extracted_text(self, output_file):
+        with open(output_file, 'r') as f:
+            self.text_display.delete(1.0, tk.END)  # Clear existing text
+            self.text_display.insert(tk.END, f.read())  # Insert new text
 
     def reset(self):
-        self.text_display.delete(1.0, tk.END)
+        self.thumbnail_label.config(image='')
         self.password_entry.delete(0, tk.END)
+        self.text_display.delete(1.0, tk.END)
 
 if __name__ == "__main__":
     root = tk.Tk()
