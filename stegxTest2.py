@@ -52,15 +52,21 @@ class StegXApp:
         self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='#2e2e2e', fg='white', font=('Arial', 12))
         self.text_display.pack(expand=True, fill=tk.BOTH, pady=10)
 
-    def select_file(self):
-    file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg"), ("Audio files", "*.mp3 *.wav")])
-    
+    # Function to handle file selection
+def select_file():
+    filetypes = [('JPEG Files', '*.jpg'), ('All Files', '*.*')]
+    file_path = filedialog.askopenfilename(title="Select a JPG file", filetypes=filetypes)
     if file_path:
-        print(f"Selected file: {file_path}")  # Debugging: Check if a file is selected
-        self.display_thumbnail(file_path)
-        self.selected_file = file_path
-    else:
-        print("No file selected.")  # Debugging: No file was selected
+        try:
+            # Load and display image
+            img = Image.open(file_path)
+            img.thumbnail((300, 300))  # Resize image to fit GUI window
+            img_tk = ImageTk.PhotoImage(img)
+            img_label.config(image=img_tk)
+            img_label.image = img_tk  # Keep a reference to prevent garbage collection
+            selected_file.set(file_path)  # Update selected file path
+        except Exception as e:
+            messagebox.showerror("Error", f"Unable to open image: {str(e)}")
 
 
     def display_thumbnail(self, file_path):
