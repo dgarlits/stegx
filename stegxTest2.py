@@ -53,10 +53,15 @@ class StegXApp:
         self.text_display.pack(expand=True, fill=tk.BOTH, pady=10)
 
     def select_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg"), ("Audio files", "*.mp3;*.wav")])
-        if file_path:
-            self.display_thumbnail(file_path)
-            self.selected_file = file_path
+    file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg"), ("Audio files", "*.mp3 *.wav")])
+    
+    if file_path:
+        print(f"Selected file: {file_path}")  # Debugging: Check if a file is selected
+        self.display_thumbnail(file_path)
+        self.selected_file = file_path
+    else:
+        print("No file selected.")  # Debugging: No file was selected
+
 
     def display_thumbnail(self, file_path):
         if file_path.lower().endswith(('.jpg', '.jpeg')):
