@@ -75,27 +75,36 @@ class StegXApp:
             except Exception as e:
                 messagebox.showerror("Error", f"Unable to open image: {str(e)}")
 
-    def extract_text(self):
-    file_path = self.selected_file.get()
-    if not file_path:
+   def extract_text(self):
+    if not hasattr(self, 'selected_file'):
         messagebox.showerror("Error", "Please select a file first.")
         return
 
     password = self.password_entry.get()  # Get the password from the entry field
-    extracted_text = f"Extracted text from {file_path}."  # Replace with actual extraction logic
+    output_file = f"{os.path.splitext(self.selected_file)[0]}.txt"
 
-    try:
-        font_size = int(self.font_size_entry.get())
-        if font_size < 12 or font_size > 22:
-            raise ValueError("Font size must be between 12 and 22.")
-    except ValueError as e:
-        messagebox.showerror("Error", str(e))
-        return
+    # Use Stegosuite for extraction (replace with actual extraction logic)
+    process = subprocess.run(['stegosuite', 'extract', '-k', password, self.selected_file], capture_output=True, text=True)
 
-    # Display extracted text in the text display area
-    self.text_display.config(font=('Arial', font_size))
-    self.text_display.delete(1.0, tk.END)
-    self.text_display.insert(tk.END, extracted_text)  # Insert new text
+    if process.returncode == 0:
+        with open(output_file, 'r') as f:
+            extracted_text = f.read()  # Read the extracted text from the file
+        
+        try:
+            font_size = int(self.font_size_entry.get())
+            if font_size < 12 or font_size > 22:
+                raise ValueError("Font size must be between 12 and 22.")
+        except ValueError as e:
+            messagebox.showerror("Error", str(e))
+            return
+
+        # Display extracted text in the text display area
+        self.text_display.config(font=('Arial', font_size))
+        self.text_display.delete(1.0, tk.END)  # Clear existing text
+        self.text_display.insert(tk.END, extracted_text)  # Insert new text
+    else:
+        messagebox.showerror("Error", f"Failed to extract text: {process.stderr}")
+
 
 
     def reset(self):
