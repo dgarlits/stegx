@@ -76,27 +76,27 @@ class StegXApp:
                 messagebox.showerror("Error", f"Unable to open image: {str(e)}")
 
     def extract_text(self):
-        file_path = self.selected_file.get()
-        if not file_path:
-            messagebox.showerror("Error", "Please select a file first.")
-            return
+    file_path = self.selected_file.get()
+    if not file_path:
+        messagebox.showerror("Error", "Please select a file first.")
+        return
 
-        password = self.password_entry.get()  # Get the password from the entry field
-        # Example: Replace with actual extraction logic
-        extracted_text = f"Extracted text from {file_path}."  # Password not displayed
+    password = self.password_entry.get()  # Get the password from the entry field
+    extracted_text = f"Extracted text from {file_path}."  # Replace with actual extraction logic
 
-        # Get the font size from the entry
-        try:
-            font_size = int(self.font_size_entry.get())
-            if font_size < 12 or font_size > 22:
-                raise ValueError("Font size must be between 12 and 22.")
-        except ValueError as e:
-            messagebox.showerror("Error", str(e))
-            return
+    try:
+        font_size = int(self.font_size_entry.get())
+        if font_size < 12 or font_size > 22:
+            raise ValueError("Font size must be between 12 and 22.")
+    except ValueError as e:
+        messagebox.showerror("Error", str(e))
+        return
 
-        self.text_display.config(font=('Arial', font_size))  # Update the font size using user input
-        self.text_display.delete(1.0, tk.END)  # Clear existing text
-        self.text_display.insert(tk.END, extracted_text)  # Insert new text
+    # Display extracted text in the text display area
+    self.text_display.config(font=('Arial', font_size))
+    self.text_display.delete(1.0, tk.END)
+    self.text_display.insert(tk.END, extracted_text)  # Insert new text
+
 
     def reset(self):
         self.thumbnail_label.config(image='')
