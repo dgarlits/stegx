@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os  # Importing os for file name handling
+import os  # Ensure os is imported
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
@@ -34,7 +34,7 @@ class StegXApp:
         self.password_label = tk.Label(self.left_frame, text="Password:", bg='black', fg='white')
         self.password_label.pack(pady=5)
 
-        self.password_entry = tk.Entry(self.left_frame, show='*')
+        self.password_entry = tk.Entry(self.left_frame, show='*')  # Keep password hidden
         self.password_entry.pack(pady=5)
 
         # Display file name label at the bottom of the left column
@@ -81,9 +81,9 @@ class StegXApp:
             messagebox.showerror("Error", "Please select a file first.")
             return
 
-        password = self.password_entry.get()
+        password = self.password_entry.get()  # Get the password from the entry field
         # Example: Replace with actual extraction logic
-        extracted_text = f"Extracted text from {file_path} with password {password}"
+        extracted_text = f"Extracted text from {file_path}."  # Password not displayed
 
         # Get the font size from the entry
         try:
