@@ -65,4 +65,16 @@ class StegoSuiteGUI:
         except subprocess.CalledProcessError:
             install_choice = messagebox.askyesno("Install Stegosuite", "Stegosuite is not installed. Would you like to install it now?")
             if install_choice:
-                self.install_stegosuit
+                self.install_stegosuite()
+
+    def install_stegosuite(self):
+        try:
+            subprocess.run("sudo apt update && sudo apt install stegosuite -y", shell=True, check=True)
+            messagebox.showinfo("Install Success", "Stegosuite installed successfully.")
+        except subprocess.CalledProcessError:
+            messagebox.showerror("Install Error", "Failed to install Stegosuite.")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    gui = StegoSuiteGUI(root)
+    root.mainloop()
