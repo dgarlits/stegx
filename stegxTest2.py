@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import subprocess
+import os
 
 class StegXApp:
     def __init__(self, master):
@@ -12,23 +12,17 @@ class StegXApp:
         self.master.title("StegX")
         self.master.configure(bg='black')
 
-        # Configure grid layout
-        self.master.grid_rowconfigure(0, weight=1)
-        self.master.grid_columnconfigure(0, weight=1)
-        self.master.grid_columnconfigure(1, weight=1)
-        self.master.grid_columnconfigure(2, weight=1)
-
-        # Frames for layout
+        # Create frames
         self.left_frame = tk.Frame(self.master, bg='black')
-        self.left_frame.grid(row=0, column=0, sticky='nsew')  # Left frame
+        self.left_frame.grid(row=0, column=0, sticky='ns')
 
         self.middle_frame = tk.Frame(self.master, bg='black')
-        self.middle_frame.grid(row=0, column=1, sticky='nsew')  # Middle frame
+        self.middle_frame.grid(row=0, column=1, sticky='ns')
 
         self.right_frame = tk.Frame(self.master, bg='black')
-        self.right_frame.grid(row=0, column=2, sticky='nsew')  # Right frame
+        self.right_frame.grid(row=0, column=2, sticky='ns')
 
-        # Widgets for left frame
+        # Left Frame Widgets
         self.select_button = tk.Button(self.left_frame, text="Select File", command=self.select_file, bg='gray', fg='white')
         self.select_button.pack(pady=10)
 
@@ -41,7 +35,7 @@ class StegXApp:
         self.password_entry = tk.Entry(self.left_frame, show='*')
         self.password_entry.pack(pady=5)
 
-        # Widgets for middle frame
+        # Middle Frame Widgets
         self.extract_button = tk.Button(self.middle_frame, text="Extract", command=self.extract_text, bg='gray', fg='white')
         self.extract_button.pack(pady=10)
 
@@ -54,36 +48,33 @@ class StegXApp:
         self.font_size_scale = tk.Scale(self.middle_frame, from_=8, to=30, orient=tk.HORIZONTAL)
         self.font_size_scale.pack(pady=5)
 
-        # Widgets for right frame
-        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='#333333', fg='white', font=('Arial', 12))
+        # Right Frame Widgets
+        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='darkgray', fg='white', font=('Arial', 12))
         self.text_display.pack(expand=True, fill=tk.BOTH, pady=10)
 
-        # Set the minimum size for the frames to keep the layout stable
-        self.left_frame.update_idletasks()
-        self.middle_frame.update_idletasks()
-        self.right_frame.update_idletasks()
+        # Configure grid weights
+        self.master.grid_columnconfigure(0, weight=1)  # Left Frame
+        self.master.grid_columnconfigure(1, weight=0)  # Middle Frame
+        self.master.grid_columnconfigure(2, weight=2)  # Right Frame
 
     def select_file(self):
-        # Open file dialog to select files
+        # Open file dialog
         file_path = filedialog.askopenfilename(
-            filetypes=[
-                ("Image files", "*.jpg;*.jpeg"),
-                ("Audio files", "*.mp3;*.wav"),
-            ]
+            title="Select a File",
+            filetypes=[("All files", "*.*")]  # Show all files
         )
         if file_path:
-            self.display_thumbnail(file_path)
             self.selected_file = file_path
+            self.display_thumbnail(file_path)
 
     def display_thumbnail(self, file_path):
         if file_path.lower().endswith(('.jpg', '.jpeg')):
             img = Image.open(file_path)
-            img.thumbnail((300, 300))  # Resize thumbnail
+            img.thumbnail((300, 300))
             self.thumbnail = ImageTk.PhotoImage(img)
             self.thumbnail_label.config(image=self.thumbnail)
-            self.thumbnail_label.image = self.thumbnail  # Keep a reference
         else:
-            self.thumbnail_label.config(image='')  # Clear the label for non-image files
+            self.thumbnail_label.config(image='')
 
     def extract_text(self):
         if not hasattr(self, 'selected_file'):
