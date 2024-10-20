@@ -1,105 +1,118 @@
 #!/usr/bin/env python3
 
 import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext
+from tkinter import filedialog, messagebox, Text, Button, Scale, LEFT, RIGHT, Frame, Label
 from PIL import Image, ImageTk
 import subprocess
 import os
 
-# Function to extract hidden text using stegosuite
-def extract_text_from_jpg(image_path, password):
-    try:
-        # Command to extract the hidden text from the image
-        output_file = f"{os.path.splitext(image_path)[0]}.txt"
-        cmd = ['stegosuite', 'extract', '-k', password, image_path]
+class StegXApp:
+    def __init__(self, master):
+        self.master = master
+        master.title("StegX")
+        master.geometry("800x400")
+        master.configure(bg="#2E2E2E")
+
+        # Create left frame for file selection and password entry
+        self.left_frame = Frame(master, bg="#2E2E2E")
+        self.left_frame.pack(side=LEFT, padx=10, pady=10)
+
+        # Select JPG File Button
+        self.select_button = Button(self.left_frame, text="Select JPG File", command=self.select_file, bg="#4B4B4B", fg="white")
+        self.select_button.pack(pady=5)
+
+        # Thumbnail Display
+        self.thumbnail_label = Label(self.left_frame, bg="#2E2E2E")
+        self.thumbnail_label.pack(pady=5)
+
+        # Password Entry
+        self.password_label = Label(self.left_frame, text="Enter Password:", bg="#2E2E2E", fg="white")
+        self.password_label.pack(pady=5)
+        self.password_entry = tk.Entry(self.left_frame, show='*')
+        self.password_entry.pack(pady=5)
+
+        # Center Extract Button
+        self.extract_button = Button(master, text="Extract Text", command=self.extract_text, bg="#4B4B4B", fg="white")
+        self.extract_button.pack(pady=10)
+
+        # Right Frame for Text Display
+        self.right_frame = Frame(master, bg="#2E2E2E")
+        self.right_frame.pack(side=RIGHT, padx=10, pady=10)
+
+        # Text Display Area
+        self.text_display = Text(self.right_frame, width=40, height=20, wrap='word', bg="#3E3E3E", fg="white", font=("Courier", 10))
+        self.text_display.pack(pady=5)
+
+        # Save Button
+        self.save_button = Button(self.right_frame, text="Save Extracted Text", command=self.save_text, bg="#4B4B4B", fg="white")
+        self.save_button.pack(pady=5)
+
+        # Reset Button
+        self.reset_button = Button(master, text="Reset", command=self.reset, bg="#4B4B4B", fg="white")
+        self.reset_button.pack(pady=10)
+
+        # Font Size Adjustment
+        self.font_size_scale = Scale(master, from_=8, to=32, orient="horizontal", label="Font Size", command=self.change_font_size, bg="#2E2E2E")
+        self.font_size_scale.set(10)
+        self.font_size_scale.pack(pady=10)
+
+        self.file_path = None
+
+    def select_file(self):
+        self.file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg")])
+        if self.file_path:
+            self.display_thumbnail()
+    
+    def display_thumbnail(self):
+        # Clear previous thumbnail
+        self.thumbnail_label.config(image='')
+        image = Image.open(self.file_path)
+        image.thumbnail((150, 150))  # Create thumbnail
+        self.thumbnail_image = ImageTk.PhotoImage(image)
+        self.thumbnail_label.config(image=self.thumbnail_image)
+
+    def extract_text(self):
+        if not self.file_path:
+            messagebox.showerror("Error", "No file selected.")
+            return
         
-        result = subprocess.run(cmd, capture_output=True, text=True)
-
-        if result.returncode == 0:
-            return result.stdout.strip()  # Return extracted text
-        else:
-            raise Exception(f"Stegosuite failed: {result.stderr.strip()}")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to extract hidden text: {str(e)}")
-        return None
-
-# Function to handle file selection
-def select_file():
-    filetypes = [('JPEG Files', '*.jpg'), ('All Files', '*.*')]
-    file_path = filedialog.askopenfilename(title="Select a JPG file", filetypes=filetypes)
-    if file_path:
+        password = self.password_entry.get()
+        output_file = f"{os.path.splitext(self.file_path)[0]}.txt"
+        
         try:
-            # Load and display image
-            img = Image.open(file_path)
-            img.thumbnail((300, 300))  # Resize image to fit GUI window
-            img_tk = ImageTk.PhotoImage(img)
-            img_label.config(image=img_tk)
-            img_label.image = img_tk  # Keep a reference to prevent garbage collection
-            selected_file.set(file_path)  # Update selected file path
+            result = subprocess.run(['stegosuite', 'extract', '-k', password, self.file_path], capture_output=True, text=True)
+            if result.returncode == 0:
+                with open(output_file, 'r') as f:
+                    extracted_text = f.read()
+                self.text_display.delete(1.0, tk.END)  # Clear previous text
+                self.text_display.insert(tk.END, extracted_text)
+            else:
+                messagebox.showerror("Error", f"Failed to extract hidden text: {result.stderr.strip()}")
         except Exception as e:
-            messagebox.showerror("Error", f"Unable to open image: {str(e)}")
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
-# Function to extract text and display it in a text box
-def extract_and_display_text():
-    file_path = selected_file.get()
-    password = password_entry.get()
+    def save_text(self):
+        extracted_text = self.text_display.get(1.0, tk.END).strip()
+        if not extracted_text:
+            messagebox.showwarning("Warning", "No text to save.")
+            return
 
-    if not file_path or not password:
-        messagebox.showwarning("Missing Input", "Please select a file and enter a password.")
-        return
+        save_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+        if save_path:
+            with open(save_path, 'w') as f:
+                f.write(extracted_text)
+            messagebox.showinfo("Success", "Text saved successfully.")
 
-    extracted_text = extract_text_from_jpg(file_path, password)
-    if extracted_text:
-        text_display.delete(1.0, tk.END)  # Clear previous content
-        text_display.insert(tk.END, extracted_text)
+    def reset(self):
+        self.file_path = None
+        self.thumbnail_label.config(image='')
+        self.text_display.delete(1.0, tk.END)
+        self.password_entry.delete(0, tk.END)
 
-# Function to save the extracted text
-def save_text():
-    extracted_text = text_display.get(1.0, tk.END).strip()
-    if not extracted_text:
-        messagebox.showwarning("No Text", "There is no extracted text to save.")
-        return
+    def change_font_size(self, size):
+        self.text_display.config(font=("Courier", int(size)))
 
-    save_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
-    if save_path:
-        with open(save_path, 'w') as f:
-            f.write(extracted_text)
-        messagebox.showinfo("Saved", f"Extracted text saved to {save_path}")
-
-# Create main application window
-root = tk.Tk()
-root.title("StegX")
-
-# Set a dark theme for the GUI
-root.configure(bg='#2e2e2e')
-root.geometry("600x500")
-
-# Variable to store the selected file path
-selected_file = tk.StringVar()
-
-# Label and button to select the file
-file_select_btn = tk.Button(root, text="Select JPG File", command=select_file, bg='#444', fg='white')
-file_select_btn.pack(pady=10)
-
-img_label = tk.Label(root, bg='#2e2e2e')
-img_label.pack(pady=10)
-
-# Password entry box
-password_label = tk.Label(root, text="Enter Password:", bg='#2e2e2e', fg='white')
-password_label.pack(pady=5)
-password_entry = tk.Entry(root, show='*', width=40)
-password_entry.pack(pady=5)
-
-# Button to extract text
-extract_btn = tk.Button(root, text="Extract Text", command=extract_and_display_text, bg='#444', fg='white')
-extract_btn.pack(pady=10)
-
-# Scrolled text box to display extracted text
-text_display = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=80, height=20, bg='#1e1e1e', fg='white', insertbackground='white')
-text_display.pack(pady=10)
-
-# Button to save the extracted text
-save_btn = tk.Button(root, text="Save Extracted Text", command=save_text, bg='#444', fg='white')
-save_btn.pack(pady=10)
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = StegXApp(root)
+    root.mainloop()
