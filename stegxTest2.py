@@ -37,9 +37,9 @@ class StegXApp:
         self.password_entry = tk.Entry(self.left_frame, show='*')
         self.password_entry.pack(pady=5)
 
-        # Display file name label
+        # Display file name label at the bottom of the left column
         self.file_name_label = tk.Label(self.left_frame, text="", bg='black', fg='white')
-        self.file_name_label.pack(pady=(5, 10))
+        self.file_name_label.pack(side=tk.BOTTOM, pady=(5, 10))
 
         # Widgets for middle frame
         self.extract_button = tk.Button(self.middle_frame, text="Extract", command=self.extract_text, bg='gray', fg='white')
@@ -71,7 +71,7 @@ class StegXApp:
                 self.thumbnail_label.config(image=img_tk)
                 self.thumbnail_label.image = img_tk  # Keep a reference to prevent garbage collection
                 self.selected_file.set(file_path)  # Update selected file path
-                self.file_name_label.config(text=os.path.basename(file_path))  # Display the file name
+                self.file_name_label.config(text=os.path.basename(file_path))  # Display the file name at the bottom
             except Exception as e:
                 messagebox.showerror("Error", f"Unable to open image: {str(e)}")
 
@@ -94,7 +94,7 @@ class StegXApp:
             messagebox.showerror("Error", str(e))
             return
 
-        self.text_display.config(font=('Arial', font_size))  # Update the font size
+        self.text_display.config(font=('Arial', font_size))  # Update the font size using user input
         self.text_display.delete(1.0, tk.END)  # Clear existing text
         self.text_display.insert(tk.END, extracted_text)  # Insert new text
 
@@ -103,6 +103,7 @@ class StegXApp:
         self.password_entry.delete(0, tk.END)
         self.text_display.delete(1.0, tk.END)
         self.file_name_label.config(text="")  # Clear the file name display
+        self.selected_file.set('')  # Clear the selected file path
 
 if __name__ == "__main__":
     root = tk.Tk()
