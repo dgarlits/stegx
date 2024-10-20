@@ -99,7 +99,7 @@ class App:
                     return
 
                 # Display extracted text in the text display area
-                self.text_display.config(font=('Arial', font_size))
+                self.text_display.config(font=('Arial', font_size), fg="white")
                 self.text_display.delete(1.0, tk.END)  # Clear existing text
                 self.text_display.insert(tk.END, extracted_text)  # Insert new text
             else:
