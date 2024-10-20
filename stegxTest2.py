@@ -14,19 +14,19 @@ class StegXApp:
 
         # Configure grid layout
         self.master.grid_rowconfigure(0, weight=1)
-        self.master.grid_columnconfigure(0, weight=2)
+        self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
-        self.master.grid_columnconfigure(2, weight=2)
+        self.master.grid_columnconfigure(2, weight=1)
 
         # Frames for layout
         self.left_frame = tk.Frame(self.master, bg='black')
-        self.left_frame.grid(row=0, column=0, sticky='ns')  # Left frame
+        self.left_frame.grid(row=0, column=0, sticky='nsew')  # Left frame
 
         self.middle_frame = tk.Frame(self.master, bg='black')
-        self.middle_frame.grid(row=0, column=1, sticky='ns')  # Middle frame
+        self.middle_frame.grid(row=0, column=1, sticky='nsew')  # Middle frame
 
         self.right_frame = tk.Frame(self.master, bg='black')
-        self.right_frame.grid(row=0, column=2, sticky='ns')  # Right frame
+        self.right_frame.grid(row=0, column=2, sticky='nsew')  # Right frame
 
         # Widgets for left frame
         self.select_button = tk.Button(self.left_frame, text="Select File", command=self.select_file, bg='gray', fg='white')
@@ -55,22 +55,20 @@ class StegXApp:
         self.font_size_scale.pack(pady=5)
 
         # Widgets for right frame
-        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='gray', fg='white', font=('Arial', 12))
+        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='#333333', fg='white', font=('Arial', 12))
         self.text_display.pack(expand=True, fill=tk.BOTH, pady=10)
 
-        # Set minimum size for frames
+        # Set the minimum size for the frames to keep the layout stable
         self.left_frame.update_idletasks()
         self.middle_frame.update_idletasks()
         self.right_frame.update_idletasks()
-        
-        # Adjust the size of the right frame to not exceed the middle frame
-        self.right_frame.config(width=self.middle_frame.winfo_width())
 
     def select_file(self):
+        # Open file dialog to select files
         file_path = filedialog.askopenfilename(
             filetypes=[
                 ("Image files", "*.jpg;*.jpeg"),
-                ("Audio files", "*.mp3;*.wav")
+                ("Audio files", "*.mp3;*.wav"),
             ]
         )
         if file_path:
