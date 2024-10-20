@@ -13,11 +13,14 @@ class App:
         self.selected_file = None
         self.image_label = None  # To hold the image label
 
+        # Change GUI background color to black
+        master.configure(bg='black')
+
         # Layout configuration
-        self.left_frame = tk.Frame(master)
+        self.left_frame = tk.Frame(master, bg='black')
         self.left_frame.pack(side=tk.LEFT, padx=10, pady=10)
         
-        self.right_frame = tk.Frame(master)
+        self.right_frame = tk.Frame(master, bg='black')
         self.right_frame.pack(side=tk.RIGHT, padx=10, pady=10)
 
         # File selection button
@@ -25,21 +28,21 @@ class App:
         self.select_button.pack()
 
         # Display selected file name
-        self.file_name_label = tk.Label(self.left_frame, text="Selected file:")
+        self.file_name_label = tk.Label(self.left_frame, text="Selected file:", bg='black', fg='white')
         self.file_name_label.pack()
 
         # Image preview
-        self.image_label = tk.Label(self.left_frame)  # Initialize the label for the image
+        self.image_label = tk.Label(self.left_frame, bg='black')  # Initialize the label for the image
         self.image_label.pack()
 
         # Font size input
-        self.font_size_label = tk.Label(self.left_frame, text="Font Size (12-22):")
+        self.font_size_label = tk.Label(self.left_frame, text="Font Size (12-22):", bg='black', fg='white')
         self.font_size_label.pack()
         self.font_size_entry = tk.Entry(self.left_frame)
         self.font_size_entry.pack()
 
         # Password entry
-        self.password_label = tk.Label(self.left_frame, text="Password:")
+        self.password_label = tk.Label(self.left_frame, text="Password:", bg='black', fg='white')
         self.password_label.pack()
         self.password_entry = tk.Entry(self.left_frame, show="*")
         self.password_entry.pack()
@@ -49,17 +52,8 @@ class App:
         self.extract_button.pack()
 
         # Text display area
-        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, height=20, width=50, bg='#2E2E2E')  # Change text display box background color
+        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, height=20, width=50, bg='#2E2E2E', fg='white')  # Dark background and light text
         self.text_display.pack()
-
-        # Change GUI background color to black
-        master.configure(bg='black')
-        self.left_frame.configure(bg='black')
-        self.right_frame.configure(bg='black')
-        self.file_name_label.configure(bg='black', fg='white')
-        self.font_size_label.configure(bg='black', fg='white')
-        self.password_label.configure(bg='black', fg='white')
-        self.image_label.configure(bg='black')
 
     def select_file(self):
         filetypes = [('JPEG Files', '*.jpg'), ('All Files', '*.*')]
