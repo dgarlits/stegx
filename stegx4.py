@@ -49,4 +49,103 @@ class App:
         self.extract_button.pack()
 
         # Text display area
-        self.text_display
+        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, height=20, width=50, bg='#2E2E2E', fg='white')  # Change text display box background and text color
+        self.text_display.pack()
+
+        # Change GUI background color to #000026
+        master.configure(bg='#000026')
+
+        # Check if Stegosuite is installed
+        self.check_install_stegosuite()
+
+    def check_install_stegosuite(self):
+        # Check if stegosuite is installed
+        result = subprocess.run(['which', 'stegosuite'], capture_output=True, text=True)
+        if result.returncode != 0:
+            # Stegosuite is not installed, prompt the user
+            install = messagebox.askyesno("Stegosuite Not Found", "Stegosuite is not installed. Would you like to install it?")
+            if install:
+                # Install stegosuite
+                try:
+                    subprocess.run(['sudo', 'apt', 'update'], check=True)
+                    subprocess.run(['sudo', 'apt', 'install', 'stegosuite', '-y'], check=True)
+                    messagebox.showinfo("Success", "Stegosuite installed successfully.")
+                except subprocess.CalledProcessError as e:
+                    messagebox.showerror("Error", f"Failed to install Stegosuite: {e}")
+                    self.master.quit()
+            else:
+                messagebox.showinfo("Exiting", "Stegosuite is required to continue.")
+                self.master.quit()
+
+    def select_file(self):
+        filetypes = [('JPEG Files', '*.jpg'), ('All Files', '*.*')]
+        self.selected_file = filedialog.askopenfilename(title="Select a JPG file", filetypes=filetypes)
+        if self.selected_file:
+            self.file_name_label.config(text=f"Selected file: {os.path.basename(self.selected_file)}")
+            self.display_image(self.selected_file)  # Call to display the image
+
+    def display_image(self, file_path):
+        try:
+            # Open the image file
+            img = Image.open(file_path)
+            img.thumbnail((300, 300))  # Resize image for preview
+            self.img_tk = ImageTk.PhotoImage(img)  # Convert to PhotoImage
+            self.image_label.config(image=self.img_tk)  # Update label with the image
+            self.image_label.image = self.img_tk  # Keep a reference to avoid garbage collection
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not display image: {e}")
+
+    def extract_text(self):
+        if not self.selected_file:
+            messagebox.showerror("Error", "Please select a file first.")
+            return
+
+        password = self.password_entry.get()  # Get the password from the entry field
+        output_file = f"{os.path.splitext(self.selected_file)[0]}.txt"
+
+        command = ['stegosuite', 'extract', '-k', password, self.selected_file]
+        print(f"Running command: {' '.join(command)}")  # Print the command for debugging
+
+        try:
+            process = subprocess.run(command, capture_output=True, text=True)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to run Stegosuite: {e}")
+            return
+
+        # Output process results for debugging
+        print(f"STDOUT: {process.stdout}")
+        print(f"STDERR: {process.stderr}")
+
+        if process.returncode == 0:
+            # Check if the output file was created
+            if os.path.exists(output_file):
+                with open(output_file, 'r') as f:
+                    extracted_text = f.read()  # Read the extracted text from the file
+
+                try:
+                    font_size = int(self.font_size_entry.get())
+                    if font_size < 12 or font_size > 22:
+                        raise ValueError("Font size must be between 12 and 22.")
+                except ValueError as e:
+                    messagebox.showerror("Error", str(e))
+                    return
+
+                # Display extracted text in the text display area
+                self.text_display.config(font=('Arial', font_size), fg="white")
+                self.text_display.delete(1.0, tk.END)  # Clear existing text
+                self.text_display.insert(tk.END, extracted_text)  # Insert new text
+            else:
+                messagebox.showerror("Error", "No extracted text file found. Please check if Stegosuite outputs to a different location.")
+                print(f"Expected output file: {output_file}")
+                print(f"Current working directory: {os.getcwd()}")
+                print(process.stdout)  # Show standard output for debugging
+                print(process.stderr)   # Show standard error for debugging
+        else:
+            messagebox.showerror("Error", f"Failed to extract text: {process.stderr}")
+            print(process.stderr)  # Output error details for debugging
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = App(root)
+    root.mainloop()
