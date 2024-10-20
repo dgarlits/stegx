@@ -1,99 +1,68 @@
 #!/usr/bin/env python3
 
-import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, font as tkfont
-from PIL import Image, ImageTk
+from tkinter import filedialog, messagebox
 import subprocess
+import os
 
-class App:
+class StegoSuiteGUI:
     def __init__(self, master):
         self.master = master
-        self.master.title("StegX - Frontend for Stegosuite")
-        self.selected_file = None
+        master.title("StegoSuite GUI")
 
-        # Layout configuration
-        self.left_frame = tk.Frame(master, bg='#000026')
-        self.left_frame.pack(side=tk.LEFT, padx=10, pady=10)
-        
-        self.right_frame = tk.Frame(master, bg='#000026')
-        self.right_frame.pack(side=tk.RIGHT, padx=10, pady=10)
+        # Image File Label and Entry
+        self.image_label = tk.Label(master, text="JPG File:")
+        self.image_label.grid(row=0, column=0)
 
-        # File selection button
-        self.select_button = tk.Button(self.left_frame, text="Select File", command=self.select_file, bg='#000026', fg='white')
-        self.select_button.pack()
+        self.image_entry = tk.Entry(master)
+        self.image_entry.grid(row=0, column=1)
 
-        # Display selected file name
-        self.file_name_label = tk.Label(self.left_frame, text="Selected file:", bg='#000026', fg='white')
-        self.file_name_label.pack()
+        self.image_button = tk.Button(master, text="Browse", command=self.browse_image)
+        self.image_button.grid(row=0, column=2)
 
-        # Image preview
-        self.image_label = tk.Label(self.left_frame, bg='#2E2E2E')
-        self.image_label.pack()
+        # Password Label and Entry
+        self.password_label = tk.Label(master, text="Password:")
+        self.password_label.grid(row=1, column=0)
 
-        # Password entry
-        self.password_label = tk.Label(self.left_frame, text="Password:", bg='#000026', fg='white')
-        self.password_label.pack()
-        self.password_entry = tk.Entry(self.left_frame, show="*", bg='#000026', fg='white')
-        self.password_entry.pack()
+        self.password_entry = tk.Entry(master, show="*")
+        self.password_entry.grid(row=1, column=1)
 
-        # Extract text button
-        self.extract_button = tk.Button(self.left_frame, text="Extract Text", command=self.extract_text, bg='#000026', fg='white')
-        self.extract_button.pack()
+        # Run Button
+        self.run_button = tk.Button(master, text="Extract Hidden Text", command=self.extract_hidden_text)
+        self.run_button.grid(row=2, column=1)
 
-        # Text display area with font control
-        self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, height=20, width=50, bg='#2E2E2E', fg='white', font=tkfont.Font(family="Helvetica", size=12))
-        self.text_display.pack()
+        # Check if Stegosuite is installed
+        self.check_install_stegosuite()
 
-        # Change GUI background color to #000026
-        master.configure(bg='#000026')
+    def browse_image(self):
+        filename = filedialog.askopenfilename(filetypes=[("JPEG files", "*.jpg")])
+        self.image_entry.delete(0, tk.END)
+        self.image_entry.insert(0, filename)
 
-    def select_file(self):
-        filetypes = [('JPEG Files', '*.jpg'), ('All Files', '*.*')]
-        self.selected_file = filedialog.askopenfilename(title="Select a JPG file", filetypes=filetypes)
-        if self.selected_file:
-            self.file_name_label.config(text=f"Selected file: {os.path.basename(self.selected_file)}")
-            self.display_image(self.selected_file)
-
-    def display_image(self, file_path):
-        try:
-            img = Image.open(file_path)
-            img.thumbnail((300, 300))  # Resize image for preview
-            self.img_tk = ImageTk.PhotoImage(img)
-            self.image_label.config(image=self.img_tk)
-            self.image_label.image = self.img_tk
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not display image: {e}")
-
-    def extract_text(self):
-        if not self.selected_file:
-            messagebox.showerror("Error", "Please select a file first.")
-            return
-
+    def extract_hidden_text(self):
+        jpg_file = self.image_entry.get()
         password = self.password_entry.get()
-        output_file = f"{os.path.splitext(self.selected_file)[0]}.txt"
 
-        # Construct the command as a single string
-        command = f'stegosuite extract -k "{password}" "{self.selected_file}"'
-        
-        try:
-            # Use subprocess to run the command directly
-            subprocess.run(command, shell=True, check=True)
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", f"Failed to extract text: {e}")
+        if not jpg_file or not password:
+            messagebox.showerror("Input Error", "Please fill all fields")
             return
 
-        # Check if the output file exists and display its contents
-        if os.path.exists(output_file):
-            with open(output_file, 'r') as f:
-                extracted_text = f.read()
+        # Define output file name
+        output_file = os.path.splitext(jpg_file)[0] + ".txt"
 
-            self.text_display.delete(1.0, tk.END)  # Clear the text box
-            self.text_display.insert(tk.END, extracted_text)  # Insert the extracted text
-        else:
-            messagebox.showerror("Error", f"No text file found. Expected: {output_file}")
+        # Prepare the command to run the Bash script
+        command = f"stegosuite extract -k '{password}' '{jpg_file}' > '{output_file}'"
+        
+        try:
+            subprocess.run(command, shell=True, check=True)
+            messagebox.showinfo("Success", f"Hidden text extracted and saved to {output_file}")
+        except subprocess.CalledProcessError:
+            messagebox.showerror("Execution Error", "Failed to extract hidden text. Please check the password or file.")
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
+    def check_install_stegosuite(self):
+        try:
+            subprocess.run("command -v stegosuite", shell=True, check=True, stdout=subprocess.PIPE)
+        except subprocess.CalledProcessError:
+            install_choice = messagebox.askyesno("Install Stegosuite", "Stegosuite is not installed. Would you like to install it now?")
+            if install_choice:
+                self.install_stegosuit
