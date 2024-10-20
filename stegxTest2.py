@@ -12,6 +12,9 @@ class StegXApp:
         self.master.title("StegX")
         self.master.configure(bg='black')
 
+        # StringVar to store the selected file path
+        self.selected_file = tk.StringVar()
+
         # Frames for layout
         self.left_frame = tk.Frame(self.master, bg='black', width=450)
         self.left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10)
@@ -26,8 +29,8 @@ class StegXApp:
         self.select_button = tk.Button(self.left_frame, text="Select File", command=self.select_file, bg='gray', fg='white')
         self.select_button.pack(pady=10)
 
-        self.thumbnail_label = tk.Label(self.left_frame, bg='black')
-        self.thumbnail_label.pack(pady=10)
+        self.img_label = tk.Label(self.left_frame, bg='black')
+        self.img_label.pack(pady=10)
 
         self.password_label = tk.Label(self.left_frame, text="Password:", bg='black', fg='white')
         self.password_label.pack(pady=5)
@@ -52,31 +55,32 @@ class StegXApp:
         self.text_display = tk.Text(self.right_frame, wrap=tk.WORD, bg='#202020', fg='white', font=('Arial', 12))
         self.text_display.pack(expand=True, fill=tk.BOTH, pady=10)
 
+    # Function to handle file selection (adapted from your working code)
     def select_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg"), ("Audio files", "*.mp3;*.wav")])
+        filetypes = [('JPEG Files', '*.jpg'), ('All Files', '*.*')]
+        file_path = filedialog.askopenfilename(title="Select a JPG file", filetypes=filetypes)
         if file_path:
-            self.display_thumbnail(file_path)
-            self.selected_file = file_path
-
-    def display_thumbnail(self, file_path):
-        if file_path.lower().endswith(('.jpg', '.jpeg')):
-            img = Image.open(file_path)
-            img.thumbnail((300, 300))
-            self.thumbnail = ImageTk.PhotoImage(img)
-            self.thumbnail_label.config(image=self.thumbnail)
-        else:
-            self.thumbnail_label.config(image='')
+            try:
+                # Load and display image
+                img = Image.open(file_path)
+                img.thumbnail((300, 300))  # Resize image to fit GUI window
+                img_tk = ImageTk.PhotoImage(img)
+                self.img_label.config(image=img_tk)
+                self.img_label.image = img_tk  # Keep a reference to prevent garbage collection
+                self.selected_file.set(file_path)  # Update selected file path
+            except Exception as e:
+                messagebox.showerror("Error", f"Unable to open image: {str(e)}")
 
     def extract_text(self):
-        if not hasattr(self, 'selected_file'):
+        if not self.selected_file.get():
             messagebox.showerror("Error", "Please select a file first.")
             return
 
         password = self.password_entry.get()
-        output_file = f"{os.path.splitext(self.selected_file)[0]}.txt"
+        output_file = f"{os.path.splitext(self.selected_file.get())[0]}.txt"
 
         # Use Stegosuite for extraction
-        process = subprocess.run(['stegosuite', 'extract', '-k', password, self.selected_file], capture_output=True, text=True)
+        process = subprocess.run(['stegosuite', 'extract', '-k', password, self.selected_file.get()], capture_output=True, text=True)
 
         if process.returncode == 0:
             with open(output_file, 'w') as f:
@@ -92,9 +96,10 @@ class StegXApp:
             self.text_display.insert(tk.END, f.read())  # Insert new text
 
     def reset(self):
-        self.thumbnail_label.config(image='')
+        self.img_label.config(image='')
         self.password_entry.delete(0, tk.END)
         self.text_display.delete(1.0, tk.END)
+        self.selected_file.set('')  # Clear selected file
 
 if __name__ == "__main__":
     root = tk.Tk()
